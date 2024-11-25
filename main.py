@@ -77,6 +77,7 @@ html_template = """
 """
 
 # Сбор данных с помощью Ansible
+# Сбор данных с помощью Ansible
 def fetch_metrics():
     result = ansible_runner.run(
         private_data_dir=".",
@@ -85,28 +86,34 @@ def fetch_metrics():
     )
 
     if result.rc != 0:
-        print("Ansible playbook failed.")
+        print("Ansible playbook execution failed.")
         return []
 
     # Получаем кэшированные факты от всех хостов
+    try:
+        fact_cache = result.get_fact_cache()  # Получаем кэш для всех хостов
+    except AttributeError as e:
+        print(f"Error accessing fact cache: {e}")
+        return []
+
     host_metrics = []
-    fact_cache = result.get_fact_cache()
     for host, facts in fact_cache.items():
         metrics = {
             "hostname": host,
-            "datetime": facts.get("datetime"),
-            "ip": facts.get("ip"),
-            "os": facts.get("os"),
-            "kernel": facts.get("kernel"),
-            "cpu_load": facts.get("cpu_load"),
-            "memory": facts.get("memory"),
-            "disk": facts.get("disk"),
-            "auth_errors": facts.get("auth_errors"),
+            "datetime": facts.get("datetime", "N/A"),
+            "ip": facts.get("ip", "N/A"),
+            "os": facts.get("os", "N/A"),
+            "kernel": facts.get("kernel", "N/A"),
+            "cpu_load": facts.get("cpu_load", "N/A"),
+            "memory": facts.get("memory", "N/A"),
+            "disk": facts.get("disk", "N/A"),
+            "auth_errors": facts.get("auth_errors", "N/A"),
         }
-        metrics["high_memory"] = float(metrics["memory"]) > 80
+        metrics["high_memory"] = float(metrics["memory"]) > 80 if metrics["memory"] != "N/A" else False
         host_metrics.append(metrics)
 
     return host_metrics
+
 
 
 @app.route("/")

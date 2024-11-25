@@ -33,15 +33,17 @@
       failed_when: false
       changed_when: false
 
-    - name: Set metrics
+    - name: Combine metrics from collected data
       set_fact:
         metrics:
           hostname: "{{ hostname.stdout }}"
-          datetime: "{{ ansible_date_time.iso8601 }}"
-          ip: "{{ ansible_default_ipv4.address }}"
+          datetime: "{{ lookup('pipe', 'date') }}"
+          ip: "{{ ansible_host }}"
           os: "{{ ansible_distribution }} {{ ansible_distribution_version }}"
           kernel: "{{ ansible_kernel }}"
-          cpu_load: "{{ cpu_usage.stdout }}"
-          memory: "{{ memory_usage.stdout | float | round(2) }}"
-          disk: "{{ disk_usage.stdout | int }}"
-          auth_errors: "{{ auth_errors.stdout | int }}"
+          cpu_load: "{{ cpu_usage.stdout | float }}"
+          memory: "{{ memory_usage.stdout | float }}"
+          disk: "{{ disk_usage.stdout }}"
+          auth_errors: "{{ auth_errors.stdout }}"
+      delegate_to: localhost
+
