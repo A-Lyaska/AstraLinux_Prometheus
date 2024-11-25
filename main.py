@@ -15,8 +15,7 @@ gauge_cpu = Gauge("host_cpu_load", "CPU load by host", ["host"])
 # Данные о хостах в инвентаре
 inventory_path = "./inventory"
 hosts_data = [
-    {"name": "host1", "ip": "172.16.0.10", "user": "alyaska", "password": "12345678"},
-    {"name": "host2", "ip": "172.16.0.20", "user": "alyaska", "password": "12345678"},
+    {"name": "host1", "ip": "172.16.0.20", "user": "alyaska", "password": "12345678"},
 ]
 
 # Шаблон страницы
