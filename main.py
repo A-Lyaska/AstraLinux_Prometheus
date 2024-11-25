@@ -88,31 +88,20 @@ def fetch_metrics():
         print("Ansible playbook execution failed.")
         return []
 
-    # Обработка фактов для каждого хоста
+    # Сбор данных из событий
     host_metrics = []
-    for host_data in hosts_data:
-        host_name = host_data["name"]
-        try:
-            facts = result.get_fact_cache(host_name)  # Получаем кэш для конкретного хоста
-        except Exception as e:
-            print(f"Error accessing fact cache for host {host_name}: {e}")
-            continue
-
-        metrics = {
-            "hostname": host_name,
-            "datetime": facts.get("datetime", "N/A"),
-            "ip": facts.get("ip", host_data["ip"]),
-            "os": facts.get("os", "N/A"),
-            "kernel": facts.get("kernel", "N/A"),
-            "cpu_load": facts.get("cpu_load", "N/A"),
-            "memory": facts.get("memory", "N/A"),
-            "disk": facts.get("disk", "N/A"),
-            "auth_errors": facts.get("auth_errors", "N/A"),
-        }
-        metrics["high_memory"] = float(metrics["memory"]) > 80 if metrics["memory"] != "N/A" else False
-        host_metrics.append(metrics)
+    for event in result.events:
+        if "event_data" in event and "res" in event["event_data"]:
+            host_res = event["event_data"]["res"]
+            if "metrics" in host_res:
+                metrics = host_res["metrics"]
+                metrics["high_memory"] = (
+                    float(metrics["memory"]) > 80 if metrics["memory"] != "N/A" else False
+                )
+                host_metrics.append(metrics)
 
     return host_metrics
+
 
 
 

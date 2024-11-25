@@ -45,5 +45,5 @@
           memory: "{{ memory_usage.stdout | float }}"
           disk: "{{ disk_usage.stdout }}"
           auth_errors: "{{ auth_errors.stdout }}"
-      delegate_to: localhost
+
 
