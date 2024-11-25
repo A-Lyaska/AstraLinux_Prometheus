@@ -28,23 +28,9 @@
         state: present
       tags: ansible
 
-    # Установка Python-зависимостей через pip
-    - name: Install Python dependencies via pip
-      pip:
-        name:
-          - ansible-runner
-          - flask
-          - prometheus_client
-          - psutil
-      executable: pip3
-      tags: pip
-
-    # Проверка успешности установки psutil
-    - name: Verify psutil installation
-      shell: python3 -c "import psutil"
-      register: psutil_check
-      ignore_errors: true
-
-    - name: Display psutil check results
-      debug:
-        var: psutil_check.rc
+    # Установка Python-зависимостей
+    - name: Install Python dependencies
+      shell: pip3 install ansible-runner flask prometheus_client psutil
+      args:
+        warn: false
+        executable: /bin/bash
