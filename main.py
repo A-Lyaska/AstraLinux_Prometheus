@@ -1,5 +1,3 @@
-import os
-import time
 import ansible_runner
 from prometheus_client import start_http_server, Gauge
 from flask import Flask, render_template_string
@@ -17,8 +15,8 @@ gauge_cpu = Gauge("host_cpu_load", "CPU load by host", ["host"])
 # Данные о хостах в инвентаре
 inventory_path = "./inventory"
 hosts_data = [
-    {"name": "host1", "ip": "192.168.1.101", "user": "user", "key": "/path/to/key"},
-    {"name": "host2", "ip": "192.168.1.102", "user": "user", "key": "/path/to/key"},
+    {"name": "host1", "ip": "172.16.0.10", "user": "alyaska", "password": "12345678"},
+    {"name": "host2", "ip": "172.16.0.20", "user": "alyaska", "password": "12345678"},
 ]
 
 # Шаблон страницы
@@ -71,7 +69,7 @@ def create_inventory():
     with open(inventory_path, "w") as file:
         file.write("[all]\n")
         for host in hosts_data:
-            file.write(f"{host['name']} ansible_host={host['ip']} ansible_user={host['user']} ansible_ssh_private_key_file={host['key']}\n")
+            file.write(f"{host['name']} ansible_host={host['ip']} ansible_user={host['user']} ansible_ssh_pass={host['password']}\n")
     print("Inventory файл создан.")
 
 # Запуск Ansible
@@ -110,12 +108,10 @@ def collect_host_metrics():
         "high_memory": memory.percent > 80
     }
 
-
 @app.route("/")
 def dashboard():
     hosts = [collect_host_metrics() for _ in hosts_data]
     return render_template_string(html_template, hosts=hosts)
-
 
 if __name__ == "__main__":
     create_inventory()
