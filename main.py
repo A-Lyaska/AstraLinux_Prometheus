@@ -84,17 +84,30 @@ def fetch_metrics():
         playbook="fetch_metrics.yml"
     )
 
-    if result.status != "successful":
+    if result.rc != 0:
         print("Ansible playbook failed.")
         return []
 
-    # Обработка данных из Ansible
+    # Получаем кэшированные факты от всех хостов
     host_metrics = []
-    for host_result in result.stats.get("hosts", {}):
-        if host_result in result.host_events:
-            event_data = result.host_events[host_result][-1]["event_data"]
-            host_metrics.append(event_data)
+    fact_cache = result.get_fact_cache()
+    for host, facts in fact_cache.items():
+        metrics = {
+            "hostname": host,
+            "datetime": facts.get("datetime"),
+            "ip": facts.get("ip"),
+            "os": facts.get("os"),
+            "kernel": facts.get("kernel"),
+            "cpu_load": facts.get("cpu_load"),
+            "memory": facts.get("memory"),
+            "disk": facts.get("disk"),
+            "auth_errors": facts.get("auth_errors"),
+        }
+        metrics["high_memory"] = float(metrics["memory"]) > 80
+        host_metrics.append(metrics)
+
     return host_metrics
+
 
 @app.route("/")
 def dashboard():
@@ -103,8 +116,8 @@ def dashboard():
 @app.route("/api/metrics")
 def api_metrics():
     hosts = fetch_metrics()
-    for host in hosts:
-        host["high_memory"] = host["memory_percent"] > 80
+    if not hosts:
+        print("No data fetched from Ansible.")
     return jsonify({"hosts": hosts})
 
 if __name__ == "__main__":

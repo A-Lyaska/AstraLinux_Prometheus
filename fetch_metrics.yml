@@ -1,41 +1,47 @@
 ---
-- name: Fetch metrics from hosts
+- name: Test metrics gathering
   hosts: all
   gather_facts: true
   tasks:
     - name: Get hostname
-      shell: hostname
+      command: hostname
       register: hostname
-      failed_when: hostname.stdout == ""
+      failed_when: false
+      changed_when: false
 
-    - name: Print CPU usage
-      debug:
-        msg: "CPU Usage: {{ cpu_usage.stdout }}"
+    - name: Get CPU usage
+      shell: "top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'"
+      register: cpu_usage
+      failed_when: false
+      changed_when: false
 
-    - name: Print Memory usage
-      debug:
-        msg: "Memory Usage: {{ memory_usage.stdout }}"
+    - name: Get memory usage
+      shell: "free | grep Mem | awk '{print $3/$2 * 100.0}'"
+      register: memory_usage
+      failed_when: false
+      changed_when: false
 
-    - name: Print Disk usage
-      debug:
-        msg: "Disk Usage: {{ disk_usage.stdout }}"
+    - name: Get disk usage
+      shell: "df / --output=pcent | tail -n 1 | tr -d '%'"
+      register: disk_usage
+      failed_when: false
+      changed_when: false
 
-    - name: Print Auth errors
-      debug:
-        msg: "Auth Errors: {{ auth_errors.stdout }}"
+    - name: Get auth errors
+      shell: "grep 'Failed password' /var/log/auth.log | wc -l"
+      register: auth_errors
+      failed_when: false
+      changed_when: false
 
-
-      - name: Combine metrics
-        set_fact:
-          metrics:
-            hostname: "{{ hostname.stdout | default('Unknown') }}"
-            datetime: "{{ ansible_date_time.date }} {{ ansible_date_time.time }}"
-            ip: "{{ ansible_default_ipv4.address | default('Unknown') }}"
-            os: "{{ ansible_distribution }} {{ ansible_distribution_version }}"
-            kernel: "{{ ansible_kernel }}"
-            cpu_load: "{{ cpu_usage.stdout | default('0.0') }}"
-            memory: "{{ memory_usage.stdout | default('0.0') }}"
-            disk: "{{ disk_usage.stdout | default('0%') }}"
-            auth_errors: "{{ auth_errors.stdout | default('0') }}"
-        delegate_to: localhost
-
+    - name: Set metrics
+      set_fact:
+        metrics:
+          hostname: "{{ hostname.stdout }}"
+          datetime: "{{ ansible_date_time.iso8601 }}"
+          ip: "{{ ansible_default_ipv4.address }}"
+          os: "{{ ansible_distribution }} {{ ansible_distribution_version }}"
+          kernel: "{{ ansible_kernel }}"
+          cpu_load: "{{ cpu_usage.stdout }}"
+          memory: "{{ memory_usage.stdout | float | round(2) }}"
+          disk: "{{ disk_usage.stdout | int }}"
+          auth_errors: "{{ auth_errors.stdout | int }}"
