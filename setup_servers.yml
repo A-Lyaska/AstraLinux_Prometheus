@@ -1,0 +1,60 @@
+---
+- name: Prepare Linux server for monitoring script
+  hosts: all
+  become: true
+  tasks:
+
+    # Обновление списка пакетов
+    - name: Update the package list
+      apt:
+        update_cache: yes
+      tags: update
+
+    # Установка Python 3 и необходимых системных инструментов
+    - name: Install Python 3 and required tools
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - software-properties-common
+          - curl
+        state: present
+      tags: python
+
+    # Установка Ansible
+    - name: Ensure Ansible is installed
+      apt:
+        name: ansible
+        state: present
+      tags: ansible
+
+    # Проверка доступности VPN (для загрузки зависимостей)
+    - name: Ensure VPN is running
+      command: curl -s https://www.google.com || echo "Warning: VPN might not be enabled!"
+      register: vpn_check
+      ignore_errors: true
+
+    - name: Display VPN check output
+      debug:
+        var: vpn_check.stdout
+
+    # Установка Python-зависимостей через pip
+    - name: Install Python dependencies via pip
+      pip:
+        name:
+          - ansible-runner
+          - flask
+          - prometheus_client
+          - psutil
+      executable: pip3
+      tags: pip
+
+    # Проверка успешности установки psutil
+    - name: Verify psutil installation
+      shell: python3 -c "import psutil"
+      register: psutil_check
+      ignore_errors: true
+
+    - name: Display psutil check results
+      debug:
+        var: psutil_check.rc
