@@ -77,7 +77,6 @@ html_template = """
 """
 
 # Сбор данных с помощью Ansible
-# Сбор данных с помощью Ansible
 def fetch_metrics():
     result = ansible_runner.run(
         private_data_dir=".",
@@ -89,19 +88,20 @@ def fetch_metrics():
         print("Ansible playbook execution failed.")
         return []
 
-    # Получаем кэшированные факты от всех хостов
-    try:
-        fact_cache = result.get_fact_cache()  # Получаем кэш для всех хостов
-    except AttributeError as e:
-        print(f"Error accessing fact cache: {e}")
-        return []
-
+    # Обработка фактов для каждого хоста
     host_metrics = []
-    for host, facts in fact_cache.items():
+    for host_data in hosts_data:
+        host_name = host_data["name"]
+        try:
+            facts = result.get_fact_cache(host_name)  # Получаем кэш для конкретного хоста
+        except Exception as e:
+            print(f"Error accessing fact cache for host {host_name}: {e}")
+            continue
+
         metrics = {
-            "hostname": host,
+            "hostname": host_name,
             "datetime": facts.get("datetime", "N/A"),
-            "ip": facts.get("ip", "N/A"),
+            "ip": facts.get("ip", host_data["ip"]),
             "os": facts.get("os", "N/A"),
             "kernel": facts.get("kernel", "N/A"),
             "cpu_load": facts.get("cpu_load", "N/A"),
@@ -113,6 +113,7 @@ def fetch_metrics():
         host_metrics.append(metrics)
 
     return host_metrics
+
 
 
 
