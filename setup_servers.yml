@@ -28,16 +28,6 @@
         state: present
       tags: ansible
 
-    # Проверка доступности VPN (для загрузки зависимостей)
-    - name: Ensure VPN is running
-      command: curl -s https://www.google.com || echo "Warning: VPN might not be enabled!"
-      register: vpn_check
-      ignore_errors: true
-
-    - name: Display VPN check output
-      debug:
-        var: vpn_check.stdout
-
     # Установка Python-зависимостей через pip
     - name: Install Python dependencies via pip
       pip:
