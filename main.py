@@ -96,12 +96,13 @@ def fetch_metrics():
     metrics = []
     print("Hosts data:", hosts_data)  # Для отладки
     for host in hosts_data:
-        if 'metric' not in host:
-            print(f"Host {host} skipped, no 'metric' key.")  # Для отладки
-            continue  # Пропускаем хост, если данные не содержат 'metric'
+        # Проверка наличия ключей 'name' и 'ip'
+        if 'name' not in host or 'ip' not in host:
+            print(f"Host {host} skipped, missing 'name' or 'ip'.")  # Для отладки
+            continue  # Пропустить хост, если отсутствуют нужные данные
 
-        hostname = host['metric'].get('nodename', 'Unknown')  # Получаем имя хоста
-        ip = host['metric'].get('instance', 'Unknown')  # Получаем IP-адрес хоста
+        hostname = host['name']  # Используем 'name' для имени хоста
+        ip = host['ip']  # Используем 'ip' для IP-адреса
         print(f"Fetching metrics for {hostname} ({ip})")  # Для отладки
 
         # CPU Load
@@ -152,6 +153,7 @@ def fetch_metrics():
         })
 
     return metrics
+
 
 
 
