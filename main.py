@@ -101,7 +101,7 @@ def fetch_metrics():
             print(f"Host {host} skipped, missing 'name' or 'ip'.")  # Для отладки
             continue  # Пропустить хост, если отсутствуют нужные данные
 
-        hostname = host['name']  # Используем 'name' для имени хоста
+        hostname = host['nodename']  # Используем 'name' для имени хоста
         ip = host['ip']  # Используем 'ip' для IP-адреса
         print(f"Fetching metrics for {hostname} ({ip})")  # Для отладки
 
