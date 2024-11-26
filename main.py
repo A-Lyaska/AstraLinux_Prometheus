@@ -96,16 +96,24 @@ def fetch_metrics_from_prometheus(query):
 import paramiko
 
 def fetch_remote_logs(host):
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host['ip'], username="user", password="password")
+    try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(host['ip'], username="user", password="password")
 
-    stdin, stdout, stderr = ssh.exec_command("journalctl -u ssh --since '1 hour ago'")
-    logs = stdout.read().decode()
-    ssh.close()
+        stdin, stdout, stderr = ssh.exec_command("sudo journalctl -u ssh --since '1 hour ago'")
+        logs = stdout.read().decode()
+        ssh.close()
 
-    auth_error_count = logs.count("Failed password")
-    return auth_error_count
+        if logs:  # Проверяем, что логи не пусты
+            auth_error_count = logs.lower().count("failed password")
+        else:
+            auth_error_count = 0
+
+        return auth_error_count
+    except Exception as e:
+        print(f"Error fetching logs from {host['name']} ({host['ip']}): {e}")
+        return "Error"
 
 
 def fetch_metrics():
