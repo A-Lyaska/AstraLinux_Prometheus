@@ -96,8 +96,8 @@ def fetch_metrics_from_prometheus(query):
 def fetch_metrics():
     metrics = []
     for host in hosts_data:
-        hostname = host["name"]
-        ip = host["ip"]
+        hostname = host['metric']['nodename']
+        ip = host['metric']['instance']
 
         # CPU Load
         cpu_query = f'avg by (instance) (rate(node_cpu_seconds_total{{mode!="idle", instance="{ip}:9100"}}[1m])) * 100'
