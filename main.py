@@ -93,29 +93,18 @@ def fetch_metrics_from_prometheus(query):
         print(f"Error fetching data from Prometheus: {e}")
         return []
 
-def fetch_auth_errors(host):
-    log_file = "/var/log/auth.log"
-    auth_error_count = 0
+import paramiko
 
-    try:
-        if os.path.exists(log_file):
-            with open(log_file, 'r') as file:
-                logs = file.readlines()
+def fetch_remote_logs(host):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(host['ip'], username="user", password="password")
 
-            for line in logs:
-                if ("Failed password" in line or "authentication failure" in line) and host['ip'] in line:
-                    auth_error_count += 1
+    stdin, stdout, stderr = ssh.exec_command("journalctl -u ssh --since '1 hour ago'")
+    logs = stdout.read().decode()
+    ssh.close()
 
-    except PermissionError:
-        print(f"Permission denied while accessing {log_file}. Try running with elevated permissions.")
-        return "Permission Denied"
-    except FileNotFoundError:
-        print(f"Log file {log_file} not found on {host['name']}.")
-        return "Log Not Found"
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        return "Error"
-
+    auth_error_count = logs.count("Failed password")
     return auth_error_count
 
 
