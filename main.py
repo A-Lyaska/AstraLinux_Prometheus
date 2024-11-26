@@ -92,12 +92,15 @@ def fetch_metrics_from_prometheus(query):
         print(f"Error fetching data from Prometheus: {e}")
         return []
 
-# Сбор метрик для хостов
 def fetch_metrics():
     metrics = []
     for host in hosts_data:
-        hostname = host['metric']['nodename']
-        ip = host['metric']['instance']
+        # Проверяем, существует ли ключ 'metric' в данных
+        if 'metric' not in host:
+            continue
+
+        hostname = host['metric'].get('nodename', 'Unknown')  # Получаем имя хоста
+        ip = host['metric'].get('instance', 'Unknown')  # Получаем IP-адрес хоста
 
         # CPU Load
         cpu_query = f'avg by (instance) (rate(node_cpu_seconds_total{{mode!="idle", instance="{ip}:9100"}}[1m])) * 100'
@@ -117,10 +120,16 @@ def fetch_metrics():
         # OS and Kernel Info
         os_query = f'node_uname_info{{instance="{ip}:9100"}}'
         os_info = fetch_metrics_from_prometheus(os_query)
-        os_value = os_info[0]["metric"].get("os", "Linux") if os_info else "Linux"
-        kernel_value = os_info[0]["metric"]["release"] if os_info else "N/A"
+        
+        # Получаем информацию об OS и Kernel с проверкой на наличие данных
+        if os_info:
+            os_value = os_info[0]["metric"].get("os", "Linux")
+            kernel_value = os_info[0]["metric"].get("release", "N/A")
+        else:
+            os_value = "Linux"
+            kernel_value = "N/A"
 
-        # Auth Errors (заглушка, требует доработки)
+        # Auth Errors (пока заглушка, требует доработки)
         auth_errors = 0
 
         # Сбор данных в итоговый список
@@ -136,7 +145,9 @@ def fetch_metrics():
             "auth_errors": auth_errors,
             "high_memory": memory_value != "N/A" and memory_value > 80
         })
+    
     return metrics
+
 
 @app.route("/")
 def dashboard():
