@@ -1,16 +1,13 @@
 from flask import Flask, jsonify, render_template_string
-import ansible_runner
+import requests
 from datetime import datetime
 
 app = Flask(__name__)
 
-# Данные хостов в inventory.yml
-hosts_data = [
-    {"name": "host1", "ip": "172.16.0.10"},
-    {"name": "host2", "ip": "172.16.0.20"}
-]
+# Хосты Prometheus
+PROMETHEUS_URL = "http://<Prometheus_IP>:9090"
 
-# Шаблон HTML для веб-страницы
+# Шаблон для веб-страницы
 html_template = """
 <!DOCTYPE html>
 <html>
@@ -76,35 +73,40 @@ html_template = """
 </html>
 """
 
-# Сбор данных с помощью Ansible
+# Функция для получения метрик из Prometheus
 def fetch_metrics():
-    result = ansible_runner.run(
-        private_data_dir=".",
-        inventory="./inventory.yml",
-        playbook="fetch_metrics.yml"
-    )
+    hosts = [
+        {"name": "host1", "ip": "172.16.0.10"},
+        {"name": "host2", "ip": "172.16.0.20"}
+    ]
 
-    if result.rc != 0:
-        print("Ansible playbook execution failed.")
-        return []
+    metrics = []
+    for host in hosts:
+        response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={
+            "query": f"node_memory_MemTotal_bytes{{instance='{host['ip']}:9100'}}"
+        })
+        memory_total = int(response.json()["data"]["result"][0]["value"][1])
 
-    # Сбор данных из событий
-    host_metrics = []
-    for event in result.events:
-        if "event_data" in event and "res" in event["event_data"]:
-            host_res = event["event_data"]["res"]
-            if "metrics" in host_res:
-                metrics = host_res["metrics"]
-                metrics["high_memory"] = (
-                    float(metrics["memory"]) > 80 if metrics["memory"] != "N/A" else False
-                )
-                host_metrics.append(metrics)
+        response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={
+            "query": f"node_memory_MemAvailable_bytes{{instance='{host['ip']}:9100'}}"
+        })
+        memory_available = int(response.json()["data"]["result"][0]["value"][1])
 
-    return host_metrics
+        memory_usage = (1 - memory_available / memory_total) * 100
 
-
-
-
+        metrics.append({
+            "hostname": host["name"],
+            "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "ip": host["ip"],
+            "os": "Linux",
+            "kernel": "N/A",
+            "cpu_load": "N/A",
+            "memory": f"{memory_usage:.2f}%",
+            "disk": "N/A",
+            "auth_errors": 0,
+            "high_memory": memory_usage > 80
+        })
+    return metrics
 
 @app.route("/")
 def dashboard():
@@ -112,10 +114,7 @@ def dashboard():
 
 @app.route("/api/metrics")
 def api_metrics():
-    hosts = fetch_metrics()
-    if not hosts:
-        print("No data fetched from Ansible.")
-    return jsonify({"hosts": hosts})
+    return jsonify({"hosts": fetch_metrics()})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
