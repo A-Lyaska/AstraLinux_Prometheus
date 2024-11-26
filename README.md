@@ -29,12 +29,12 @@
      # Запустить Node Exporter
      sudo systemctl daemon-reload
      sudo systemctl enable node_exporter
-     sudo systemctl start node_exporter```
+     sudo systemctl start node_exporter
 5) Установка Prometheus на Linux-устройство (на хост)
    ```wget https://github.com/prometheus/prometheus/releases/download/v2.47.0/prometheus-2.47.0.linux-amd64.tar.gz
      tar xvf prometheus-2.47.0.linux-amd64.tar.gz
      sudo mv prometheus-2.47.0.linux-amd64/prometheus /usr/local/bin/
-     sudo mv prometheus-2.47.0.linux-amd64/promtool /usr/local/bin/```
+     sudo mv prometheus-2.47.0.linux-amd64/promtool /usr/local/bin/
 7) Запуск Prometheus
    ```prometheus --config.file=AstraLinux_Prometheus/prometheus.yml```
 8) Запуск скрипта
