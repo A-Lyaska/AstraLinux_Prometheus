@@ -56,19 +56,19 @@ html_template = """
     </script>
 </head>
 <body>
-    <h1>Monitoring Dashboard</h1>
+    <h1>Центр мониторинга</h1>
     <table>
         <thead>
             <tr>
-                <th>Hostname</th>
-                <th>Date & Time</th>
-                <th>IP Address</th>
-                <th>OS Version</th>
-                <th>Kernel Version</th>
-                <th>CPU Load</th>
-                <th>Memory Usage</th>
-                <th>Disk Usage</th>
-                <th>Auth Errors</th>
+                <th>Имя</th>
+                <th>Дата и время</th>
+                <th>IP-адрес</th>
+                <th>Версия ОС</th>
+                <th>Версия ядра</th>
+                <th>Загрузка ЦП</th>
+                <th>Использование ОП</th>
+                <th>Использование диска</th>
+                <th>Ошибки авторизации</th>
             </tr>
         </thead>
         <tbody id="host-data">
