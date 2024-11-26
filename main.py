@@ -99,7 +99,7 @@ def fetch_remote_logs(host):
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(host['ip'], username="user", password="password")
+        ssh.connect(host['ip'], username="user", key_filename="~/.ssh/id_rsa")
 
         stdin, stdout, stderr = ssh.exec_command("sudo journalctl -u ssh --since '1 hour ago'")
         logs = stdout.read().decode()
