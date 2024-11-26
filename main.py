@@ -96,14 +96,6 @@ def fetch_metrics():
     metrics = []
     print("Hosts data:", hosts_data)  # Для отладки
     for host in hosts_data:
-        # Проверка наличия ключей 'name' и 'ip'
-        if 'name' not in host or 'ip' not in host:
-            print(f"Host {host} skipped, missing 'name' or 'ip'.")  # Для отладки
-            continue  # Пропустить хост, если отсутствуют нужные данные
-
-        nodename = os_query[0]['metric']['nodename']
-        print(f"Using nodename as hostname: {nodename}")
-        host['name'] = nodename
 
         hostname = host['name']  # Используем 'name' для имени хоста
         ip = host['ip']  # Используем 'ip' для IP-адреса
@@ -135,16 +127,14 @@ def fetch_metrics():
         if os_info:
             os_value = os_info[0]["metric"].get("os", "Linux")
             kernel_value = os_info[0]["metric"].get("release", "N/A")
-        else:
-            os_value = "Linux"
-            kernel_value = "N/A"
+            nodename_value = os_info[0]["metric"].get("nodename", "host")
 
         # Auth Errors (пока заглушка, требует доработки)
         auth_errors = 0
 
         # Сбор данных в итоговый список
         metrics.append({
-            "hostname": hostname,
+            "hostname": nodename_value,
             "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "ip": ip,
             "os": os_value,
