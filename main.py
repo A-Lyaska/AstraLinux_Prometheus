@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, render_template_string
 import requests
 from datetime import datetime
@@ -92,6 +93,25 @@ def fetch_metrics_from_prometheus(query):
         print(f"Error fetching data from Prometheus: {e}")
         return []
 
+def fetch_auth_errors(host):
+    log_file = "/var/log/auth.log"
+    auth_error_count = 0
+    
+    try:
+        if os.path.exists(log_file):
+            with open(log_file, 'r') as file:
+                logs = file.readlines()
+
+            for line in logs:
+                if "Failed password" in line or "authentication failure" in line:
+                    if host['ip'] in line:
+                        auth_error_count += 1
+
+    except FileNotFoundError:
+        print(f"Log file {log_file} not found on {host['name']}.")
+    
+    return auth_error_count
+
 def fetch_metrics():
     metrics = []
     print("Hosts data:", hosts_data)  # Для отладки
@@ -129,8 +149,8 @@ def fetch_metrics():
             kernel_value = os_info[0]["metric"].get("release", "N/A")
             nodename_value = os_info[0]["metric"].get("nodename", "host")
 
-        # Auth Errors (пока заглушка, требует доработки)
-        auth_errors = 0
+        # Auth Errors (в работе)
+        auth_errors = fetch_auth_errors(host)
 
         # Сбор данных в итоговый список
         metrics.append({
