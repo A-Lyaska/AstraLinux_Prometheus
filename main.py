@@ -95,15 +95,18 @@ def fetch_metrics_from_prometheus(query):
 
 import paramiko
 
+import paramiko
+
 def fetch_remote_logs(host):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    # Разворачиваем ~ в домашнюю директорию
-    private_key_path = os.path.expanduser("~/.ssh/id_rsa")
+    # Параметры подключения
+    username = "alyaska"  # Укажите имя пользователя
+    password = "12345678"  # Укажите пароль
 
     try:
-        ssh.connect(host['ip'], username="user", key_filename=private_key_path)
+        ssh.connect(host['ip'], username=username, password=password)
     except paramiko.AuthenticationException:
         print(f"Authentication failed for {host['name']} ({host['ip']}). Check username/password.")
         return 0
@@ -118,6 +121,7 @@ def fetch_remote_logs(host):
     logs = stdout.read().decode()
     ssh.close()
 
+    # Подсчёт ошибок аутентификации
     auth_error_count = logs.count("Failed password")
     return auth_error_count
 
