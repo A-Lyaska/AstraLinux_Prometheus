@@ -4,10 +4,15 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Хосты Prometheus
-PROMETHEUS_URL = "http://<Prometheus_IP>:9090"
+# Данные хостов в Prometheus
+hosts_data = [
+    {"name": "host1", "ip": "172.16.0.10"},
+    {"name": "host2", "ip": "172.16.0.20"}
+]
 
-# Шаблон для веб-страницы
+PROMETHEUS_URL = "http://localhost:9090/api/v1/query"  # Убедитесь, что Prometheus доступен по этому адресу
+
+# Шаблон HTML для веб-страницы
 html_template = """
 <!DOCTYPE html>
 <html>
@@ -73,38 +78,63 @@ html_template = """
 </html>
 """
 
-# Функция для получения метрик из Prometheus
+# Функция для получения данных из Prometheus
+def fetch_metrics_from_prometheus(query):
+    try:
+        response = requests.get(PROMETHEUS_URL, params={"query": query})
+        response.raise_for_status()
+        result = response.json()
+        if result["status"] == "success":
+            return result["data"]["result"]
+        else:
+            return []
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data from Prometheus: {e}")
+        return []
+
+# Сбор метрик для хостов
 def fetch_metrics():
-    hosts = [
-        {"name": "host1", "ip": "172.16.0.10"},
-        {"name": "host2", "ip": "172.16.0.20"}
-    ]
-
     metrics = []
-    for host in hosts:
-        response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={
-            "query": f"node_memory_MemTotal_bytes{{instance='{host['ip']}:9100'}}"
-        })
-        memory_total = int(response.json()["data"]["result"][0]["value"][1])
+    for host in hosts_data:
+        hostname = host["name"]
+        ip = host["ip"]
 
-        response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={
-            "query": f"node_memory_MemAvailable_bytes{{instance='{host['ip']}:9100'}}"
-        })
-        memory_available = int(response.json()["data"]["result"][0]["value"][1])
+        # CPU Load
+        cpu_query = f'avg by (instance) (rate(node_cpu_seconds_total{{mode!="idle", instance="{ip}:9100"}}[1m])) * 100'
+        cpu_load = fetch_metrics_from_prometheus(cpu_query)
+        cpu_load_value = float(cpu_load[0]["value"][1]) if cpu_load else "N/A"
 
-        memory_usage = (1 - memory_available / memory_total) * 100
+        # Memory Usage
+        memory_query = f'100 - (node_memory_MemAvailable_bytes{{instance="{ip}:9100"}} * 100 / node_memory_MemTotal_bytes{{instance="{ip}:9100"}})'
+        memory_usage = fetch_metrics_from_prometheus(memory_query)
+        memory_value = float(memory_usage[0]["value"][1]) if memory_usage else "N/A"
 
+        # Disk Usage
+        disk_query = f'100 - (node_filesystem_free_bytes{{instance="{ip}:9100",fstype!=""}} * 100 / node_filesystem_size_bytes{{instance="{ip}:9100",fstype!=""}})'
+        disk_usage = fetch_metrics_from_prometheus(disk_query)
+        disk_value = float(disk_usage[0]["value"][1]) if disk_usage else "N/A"
+
+        # OS and Kernel Info
+        os_query = f'node_uname_info{{instance="{ip}:9100"}}'
+        os_info = fetch_metrics_from_prometheus(os_query)
+        os_value = os_info[0]["metric"]["os"] if os_info else "Linux"
+        kernel_value = os_info[0]["metric"]["release"] if os_info else "N/A"
+
+        # Auth Errors (заглушка, требует доработки)
+        auth_errors = 0
+
+        # Сбор данных в итоговый список
         metrics.append({
-            "hostname": host["name"],
+            "hostname": hostname,
             "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "ip": host["ip"],
-            "os": "Linux",
-            "kernel": "N/A",
-            "cpu_load": "N/A",
-            "memory": f"{memory_usage:.2f}%",
-            "disk": "N/A",
-            "auth_errors": 0,
-            "high_memory": memory_usage > 80
+            "ip": ip,
+            "os": os_value,
+            "kernel": kernel_value,
+            "cpu_load": f"{cpu_load_value:.2f}%" if isinstance(cpu_load_value, float) else "N/A",
+            "memory": f"{memory_value:.2f}%" if isinstance(memory_value, float) else "N/A",
+            "disk": f"{disk_value:.2f}%" if isinstance(disk_value, float) else "N/A",
+            "auth_errors": auth_errors,
+            "high_memory": memory_value != "N/A" and memory_value > 80
         })
     return metrics
 
@@ -114,7 +144,8 @@ def dashboard():
 
 @app.route("/api/metrics")
 def api_metrics():
-    return jsonify({"hosts": fetch_metrics()})
+    hosts = fetch_metrics()
+    return jsonify({"hosts": hosts})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
