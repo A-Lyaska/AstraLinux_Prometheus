@@ -107,6 +107,7 @@ def fetch_remote_logs(host):
 
     try:
         ssh.connect(host['ip'], username=username, password=password)
+        print(f"Authentication success for {host['name']} ({host['ip']}). Check username/password.")
     except paramiko.AuthenticationException:
         print(f"Authentication failed for {host['name']} ({host['ip']}). Check username/password.")
         return 0
