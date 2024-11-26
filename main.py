@@ -125,7 +125,7 @@ def fetch_metrics():
         print(f"OS Info Query for {ip}: {os_info}")  # Для отладки
         
         if os_info:
-            os_value = os_info[0]["metric"].get("os", "Linux")
+            os_value = os_info[0]["metric"].get("version", "Linux")
             kernel_value = os_info[0]["metric"].get("release", "N/A")
             nodename_value = os_info[0]["metric"].get("nodename", "host")
 
