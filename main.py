@@ -117,7 +117,7 @@ def fetch_metrics():
         # OS and Kernel Info
         os_query = f'node_uname_info{{instance="{ip}:9100"}}'
         os_info = fetch_metrics_from_prometheus(os_query)
-        os_value = os_info[0]["metric"]["os"] if os_info else "Linux"
+        os_value = os_info[0]["metric"].get("os", "Linux") if os_info else "Linux"
         kernel_value = os_info[0]["metric"]["release"] if os_info else "N/A"
 
         # Auth Errors (заглушка, требует доработки)
