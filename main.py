@@ -1,7 +1,7 @@
-import os
 from flask import Flask, jsonify, render_template_string
 import requests
 from datetime import datetime
+import paramiko
 
 app = Flask(__name__)
 
@@ -93,10 +93,6 @@ def fetch_metrics_from_prometheus(query):
         print(f"Error fetching data from Prometheus: {e}")
         return []
 
-import paramiko
-
-import paramiko
-
 def fetch_remote_logs(host):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -107,15 +103,11 @@ def fetch_remote_logs(host):
 
     try:
         ssh.connect(host['ip'], username=username, password=password)
-        print(f"Authentication success for {host['name']} ({host['ip']})")
     except paramiko.AuthenticationException:
-        print(f"Authentication failed for {host['name']} ({host['ip']}). Check username/password.")
         return 0
     except paramiko.SSHException as e:
-        print(f"SSH error for {host['name']} ({host['ip']}): {e}")
         return 0
     except Exception as e:
-        print(f"Unexpected error for {host['name']} ({host['ip']}): {e}")
         return 0
 
     stdin, stdout, stderr = ssh.exec_command("sudo cat /var/log/auth.log")
@@ -126,46 +118,38 @@ def fetch_remote_logs(host):
     auth_error_count = logs.count("Failed password")
     return auth_error_count
 
-
-
 def fetch_metrics():
     metrics = []
-    print("Hosts data:", hosts_data)  # Для отладки
     for host in hosts_data:
 
-        hostname = host['name']  # Используем 'name' для имени хоста
-        ip = host['ip']  # Используем 'ip' для IP-адреса
-        print(f"Fetching metrics for {hostname} ({ip})")  # Для отладки
-
+        hostname = host['name']
+        ip = host['ip'] 
+        
         # CPU Load
         cpu_query = f'avg by (instance) (rate(node_cpu_seconds_total{{mode!="idle", instance="{ip}:9100"}}[1m])) * 100'
         cpu_load = fetch_metrics_from_prometheus(cpu_query)
-        print(f"CPU Load Query for {ip}: {cpu_load}")  # Для отладки
         cpu_load_value = float(cpu_load[0]["value"][1]) if cpu_load else "N/A"
 
         # Memory Usage
         memory_query = f'100 - (node_memory_MemAvailable_bytes{{instance="{ip}:9100"}} * 100 / node_memory_MemTotal_bytes{{instance="{ip}:9100"}})'
         memory_usage = fetch_metrics_from_prometheus(memory_query)
-        print(f"Memory Usage Query for {ip}: {memory_usage}")  # Для отладки
         memory_value = float(memory_usage[0]["value"][1]) if memory_usage else "N/A"
 
         # Disk Usage
         disk_query = f'100 - (node_filesystem_free_bytes{{instance="{ip}:9100",fstype!=""}} * 100 / node_filesystem_size_bytes{{instance="{ip}:9100",fstype!=""}})'
         disk_usage = fetch_metrics_from_prometheus(disk_query)
-        print(f"Disk Usage Query for {ip}: {disk_usage}")  # Для отладки
         disk_value = float(disk_usage[0]["value"][1]) if disk_usage else "N/A"
 
         # OS and Kernel Info
         os_query = f'node_uname_info{{instance="{ip}:9100"}}'
         os_info = fetch_metrics_from_prometheus(os_query)
-        print(f"OS Info Query for {ip}: {os_info}")  # Для отладки
         
         if os_info:
             os_value = os_info[0]["metric"].get("version", "Linux")
             kernel_value = os_info[0]["metric"].get("release", "N/A")
             nodename_value = os_info[0]["metric"].get("nodename", "host")
 
-        # Auth Errors (в работе)
+        # Auth Errors
         auth_errors = fetch_remote_logs(host)
 
         # Сбор данных в итоговый список
@@ -183,9 +167,6 @@ def fetch_metrics():
         })
 
     return metrics
-
-
-
 
 @app.route("/")
 def dashboard():
