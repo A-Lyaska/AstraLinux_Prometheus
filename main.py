@@ -146,7 +146,7 @@ def fetch_metrics():
             nodename_value = os_info[0]["metric"].get("nodename", "host")
 
         # Auth Errors (в работе)
-        auth_errors = fetch_auth_errors(host)
+        auth_errors = fetch_remote_logs(host)
 
         # Сбор данных в итоговый список
         metrics.append({
