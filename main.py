@@ -118,7 +118,7 @@ def fetch_remote_logs(host):
         print(f"Unexpected error for {host['name']} ({host['ip']}): {e}")
         return 0
 
-    stdin, stdout, stderr = ssh.exec_command("journalctl -u ssh --since '1 hour ago'")
+    stdin, stdout, stderr = ssh.exec_command("sudo cat /var/log/auth.log")
     logs = stdout.read().decode()
     ssh.close()
 
