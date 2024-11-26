@@ -1,3 +1,0 @@
-[all]
-host1 ansible_host=172.16.0.10 ansible_user=alyaska ansible_ssh_pass=12345678
-host2 ansible_host=172.16.0.20 ansible_user=alyaska ansible_ssh_pass=12345678
