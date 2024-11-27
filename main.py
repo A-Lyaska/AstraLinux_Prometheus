@@ -115,7 +115,7 @@ def fetch_remote_logs(host):
     ssh.close()
 
     # Подсчёт ошибок аутентификации
-    auth_error_count = logs.count("Failed password")
+    auth_error_count = logs.count("Authentication failure")
     return auth_error_count
 
 def fetch_metrics():
